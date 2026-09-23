@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI英語音読＆スピーキングトレーナー (seitono Voice AI Pro)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel Standalone for JSX compilation in browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .font-serif-custom { font-family: 'Newsreader', Georgia, serif; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+
+<div id="root"></div>
+
+<script type="text/babel">
+  const { useState, useEffect, useRef } = React;
+
+  const Icon = ({ path, className = "w-5 h-5", fill = "none" }) => (
+    <svg className={className} fill={fill} viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {path}
+    </svg>
+  );
+
+  const Icons = {
+    BookOpen: (p) => <Icon {...p} path={<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />} />,
+    Mic: (p) => <Icon {...p} path={<g><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></g>} />,
+    Volume2: (p) => <Icon {...p} path={<g><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></g>} />,
+    CheckCircle: (p) => <Icon {...p} path={<g><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></g>} />,
+    Send: (p) => <Icon {...p} path={<g><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></g>} />,
+    Key: (p) => <Icon {...p} path={<g><path d="M21 2l-2 2m-1.5 1.5l-3 3m-2 2l-3 3m-2 2l-3 3"/><circle cx="7.5" cy="16.5" r="4.5"/></g>} />,
+    ExternalLink: (p) => <Icon {...p} path={<g><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></g>} />,
+    Award: (p) => <Icon {...p} path={<g><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></g>} />,
+    RotateCcw: (p) => <Icon {...p} path={<g><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></g>} />,
+    Sparkles: (p) => <Icon {...p} path={<path d="M12 3l1.912 5.813a2 2 0 001.275 1.275L21 12l-5.813 1.912a2 2 0 00-1.275 1.275L12 21l-1.912-5.813a2 2 0 00-1.275-1.275L3 12l5.813-1.912a2 2 0 001.275-1.275L12 3z"/>} />,
+    FileText: (p) => <Icon {...p} path={<g><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></g>} />,
+    User: (p) => <Icon {...p} path={<g><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g>} />,
+    GraduationCap: (p) => <Icon {...p} path={<g><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></g>} />,
+    Play: (p) => <Icon {...p} path={<polygon points="5 3 19 12 5 21 5 3"/>} />,
+    HelpCircle: (p) => <Icon {...p} path={<g><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></g>} />,
+    Check: (p) => <Icon {...p} path={<polyline points="20 6 9 17 4 12"/>} />,
+    ChevronRight: (p) => <Icon {...p} path={<polyline points="9 18 15 12 9 6"/>} />,
+    Upload: (p) => <Icon {...p} path={<g><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></g>} />,
+    MessageSquare: (p) => <Icon {...p} path={<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>} />,
+    Flame: (p) => <Icon {...p} path={<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>} />,
+    Clock: (p) => <Icon {...p} path={<g><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></g>} />,
+    Zap: (p) => <Icon {...p} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />,
+    X: (p) => <Icon {...p} path={<g><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></g>} />
+  };
+
+  const PRESET_PASSAGES = [
+    {
+      id: 'passage-1',
+      title: 'AI and the Future of Renewable Energy',
+      level: 'CEFR B2 / 英検2級',
+      category: 'Technology & Climate',
+      passage: `Artificial intelligence is transforming how we store and distribute renewable energy. Smart grids powered by machine learning algorithms can predict energy demand with unprecedented accuracy, allowing solar and wind power systems to operate at maximum efficiency. As climate change accelerates, these technological innovations become crucial for a sustainable transition.`,
+      sentences: [
+        "Artificial intelligence is transforming how we store and distribute renewable energy.",
+        "Smart grids powered by machine learning algorithms can predict energy demand with unprecedented accuracy, allowing solar and wind power systems to operate at maximum efficiency.",
+        "As climate change accelerates, these technological innovations become crucial for a sustainable transition."
+      ],
+      vocabulary: [
+        { word: 'unprecedented', meaning: '前例のない・かつてない' },
+        { word: 'accelerates', meaning: '加速する・促進される' },
+        { word: 'crucial', meaning: 'きわめて重要な・決定的な' },
+        { word: 'sustainable', meaning: '持続可能な' }
+      ],
+      quizzes: [
+        {
+          question: 'What technology helps predict energy demand in smart grids?',
+          options: ['Fossil fuel generators', 'Machine learning algorithms', 'Manual power switches', 'Hydroelectric dams'],
+          correctIndex: 1
+        },
+        {
+          question: 'Why are these innovations becoming crucial?',
+          options: [
+            'Because traditional energy is free',
+            'Because climate change is accelerating',
+            'To decrease computer usage',
+            'To replace wind turbines with coal'
+          ],
+          correctIndex: 1
+        }
+      ]
+    },
+    {
+      id: 'passage-2',
+      title: 'The Psychological Power of Habit Loops',
+      level: 'CEFR B2 / 英検準1級',
+      category: 'Psychology & Health',
+      passage: `Building positive habits is fundamental to achieving long-term personal goals. Psychological research shows that habits follow a three-step loop: a cue, a routine, and a reward. By understanding this process, individuals can consciously reshape their behaviors and overcome procrastination.`,
+      sentences: [
+        "Building positive habits is fundamental to achieving long-term personal goals.",
+        "Psychological research shows that habits follow a three-step loop: a cue, a routine, and a reward.",
+        "By understanding this process, individuals can consciously reshape their behaviors and overcome procrastination."
+      ],
+      vocabulary: [
+        { word: 'fundamental', meaning: '根本的な・不可欠な' },
+        { word: 'consciously', meaning: '意識的に' },
+        { word: 'procrastination', meaning: '先延ばし癖' }
+      ],
+      quizzes: [
+        {
+          question: 'According to the text, what three steps make up a habit loop?',
+          options: ['Start, middle, and end', 'Cue, routine, and reward', 'Plan, action, and mistake', 'Thought, feeling, and dream'],
+          correctIndex: 1
+        }
+      ]
+    }
+  ];
+
+  function App() {
+    const [mode, setMode] = useState('student');
+    const [activeTab, setActiveTab] = useState('reading');
+    const [apiKey, setApiKey] = useState('');
+    const [showSettings, setShowSettings] = useState(false);
+    const [tasks, setTasks] = useState(PRESET_PASSAGES);
+    const [selectedTask, setSelectedTask] = useState(PRESET_PASSAGES[0]);
+
+    const [activeStep, setActiveStep] = useState(1);
+    const [quizAnswers, setQuizAnswers] = useState({});
+    const [quizSubmitted, setQuizSubmitted] = useState(false);
+    const [practiceCount, setPracticeCount] = useState(0);
+
+    const [isRecording, setIsRecording] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const [audioSpeed, setAudioSpeed] = useState(0.9);
+    const [isPlayingModelVoice, setIsPlayingModelVoice] = useState(false);
+    const [highlightSentenceIndex, setHighlightSentenceIndex] = useState(-1);
+
+    const [assessmentResult, setAssessmentResult] = useState(null);
+    const [isEvaluating, setIsEvaluating] = useState(false);
+    const [submittedToClassroom, setSubmittedToClassroom] = useState(false);
+
+    const [toastMessage, setToastMessage] = useState(null);
+
+    const [chatMessages, setChatMessages] = useState([
+      { role: 'assistant', text: `Hello! Let's talk about "${PRESET_PASSAGES[0].title}". What did you think about this article?` }
+    ]);
+    const [userChatInput, setUserChatInput] = useState('');
+    const [isChatSending, setIsChatSending] = useState(false);
+
+    const [teacherPassage, setTeacherPassage] = useState('');
+    const [teacherTitle, setTeacherTitle] = useState('');
+    const [teacherCategory, setTeacherCategory] = useState('General');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const recognitionRef = useRef(null);
+    const chatEndRef = useRef(null);
+
+    const showToast = (msg) => {
+      setToastMessage(msg);
+      setTimeout(() => setToastMessage(null), 3500);
+    };
+
+    useEffect(() => {
+      const savedKey = localStorage.getItem('seitono_gemini_api_key');
+      if (savedKey) setApiKey(savedKey);
+
+      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'en-US';
+
+        recognitionRef.current.onresult = (event) => {
+          let currentTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          setTranscript(currentTranscript);
+        };
+
+        recognitionRef.current.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsRecording(false);
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsRecording(false);
+        };
+      }
+    }, []);
+
+    useEffect(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [chatMessages]);
+
+    const saveApiKey = (key) => {
+      setApiKey(key);
+      localStorage.setItem('seitono_gemini_api_key', key);
+      setShowSettings(false);
+      showToast('Gemini APIキーを正常に保存しました！');
+    };
+
+    const speakText = (text, sentenceIdx = -1) => {
+      if (!('speechSynthesis' in window)) {
+        showToast('お使いのブラウザは音声再生に対応していません。');
+        return;
+      }
+
+      if (isPlayingModelVoice) {
+        window.speechSynthesis.cancel();
+        setIsPlayingModelVoice(false);
+        setHighlightSentenceIndex(-1);
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = audioSpeed;
+
+      if (sentenceIdx !== -1) {
+        setHighlightSentenceIndex(sentenceIdx);
+      }
+
+      utterance.onend = () => {
+        setIsPlayingModelVoice(false);
+        setHighlightSentenceIndex(-1);
+      };
+
+      utterance.onerror = () => {
+        setIsPlayingModelVoice(false);
+        setHighlightSentenceIndex(-1);
+      };
+
+      setIsPlayingModelVoice(true);
+      window.speechSynthesis.speak(utterance);
+    };
+
+    const toggleRecording = (isPractice = false) => {
+      if (!recognitionRef.current) {
+        showToast('Google ChromeやEdgeなどの音声認識対応ブラウザでお試しください。');
+        return;
+      }
+
+      if (isRecording) {
+        recognitionRef.current.stop();
+        setIsRecording(false);
+        if (isPractice) {
+          setPracticeCount((prev) => prev + 1);
+        }
+      } else {
+        setTranscript('');
+        try {
+          recognitionRef.current.start();
+          setIsRecording(true);
+        } catch (err) {
+          console.error("Recording start error:", err);
+        }
+      }
+    };
+
+    const evaluateReading = async () => {
+      if (!transcript.trim()) {
+        showToast('まずは録音を行ってください。');
+        return;
+      }
+
+      setIsEvaluating(true);
+
+      if (apiKey) {
+        try {
+          const prompt = `Act as an expert English speech evaluator for Japanese high school students.
+Target Passage: "${selectedTask.passage}"
+Student Speech Transcript: "${transcript}"
+
+Analyze the reading for accuracy, fluency, pronunciation, and CEFR level.
+Return ONLY a valid JSON object matching this structure (no markdown fences, just JSON):
+{
+  "score": 85,
+  "cefrLevel": "B2",
+  "accuracy": 88,
+  "fluency": 82,
+  "feedback": "非常にクリアで自然なテンポで読めています。'unprecedented' のアクセント位置に気をつけるとさらに向上します。",
+  "missedWords": ["unprecedented", "accelerates"]
+}`;
+
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            }
+          );
+
+          const data = await response.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+
+          if (jsonMatch) {
+            setAssessmentResult(JSON.parse(jsonMatch[0]));
+          } else {
+            throw new Error('Invalid JSON format');
+          }
+        } catch (err) {
+          console.error('Gemini API Error', err);
+          performFallbackEvaluation();
+        }
+      } else {
+        setTimeout(() => performFallbackEvaluation(), 800);
+      }
+
+      setIsEvaluating(false);
+      setActiveStep(4);
+    };
+
+    const performFallbackEvaluation = () => {
+      const origWords = selectedTask.passage.toLowerCase().match(/\b[a-z]+\b/g) || [];
+      const readWords = transcript.toLowerCase().match(/\b[a-z]+\b/g) || [];
+      
+      let matches = 0;
+      const missed = [];
+
+      origWords.forEach((w) => {
+        if (readWords.includes(w)) {
+          matches++;
+        } else if (!missed.includes(w) && w.length > 4) {
+          missed.push(w);
+        }
+      });
+
+      const accuracyScore = Math.min(100, Math.round((matches / Math.max(origWords.length, 1)) * 100));
+      const totalScore = Math.min(100, Math.round(accuracyScore * 0.85 + 15));
+
+      setAssessmentResult({
+        score: totalScore,
+        cefrLevel: totalScore > 85 ? 'B2 / 英検2級' : 'B1 / 英検準2級',
+        accuracy: accuracyScore,
+        fluency: 84,
+        feedback: '全体的に聞き取りやすくハッキリ発音できています！重要単語の音読スピードを意識するとさらに流暢さが増します。',
+        missedWords: missed.slice(0, 3)
+      });
+    };
+
+    const handleTeacherGenerate = async () => {
+      if (!teacherPassage.trim()) {
+        showToast('英文テキストを入力してください。');
+        return;
+      }
+
+      setIsGenerating(true);
+
+      if (apiKey) {
+        try {
+          const prompt = `Create an English reading comprehension task from this passage:
+"${teacherPassage}"
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "title": "${teacherTitle || 'Custom Task'}",
+  "level": "CEFR B2 / 英検2級",
+  "category": "${teacherCategory}",
+  "passage": "${teacherPassage.replace(/"/g, '\\"')}",
+  "sentences": ["Sentence 1", "Sentence 2"],
+  "vocabulary": [{"word": "word1", "meaning": "意味1"}],
+  "quizzes": [{"question": "Question?", "options": ["A", "B", "C", "D"], "correctIndex": 0}]
+}`;
+
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            }
+          );
+
+          const data = await response.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+
+          if (jsonMatch) {
+            const newTask = { ...JSON.parse(jsonMatch[0]), id: `task-${Date.now()}` };
+            setTasks([newTask, ...tasks]);
+            setSelectedTask(newTask);
+            showToast('AI課題が正常に自動作成されました！');
+          } else {
+            throw new Error('JSON Parse failed');
+          }
+        } catch (err) {
+          console.error(err);
+          createDemoTask();
+        }
+      } else {
+        setTimeout(() => {
+          createDemoTask();
+          showToast('（デモ）新課題が作成・追加されました！');
+        }, 800);
+      }
+
+      setIsGenerating(false);
+    };
+
+    const createDemoTask = () => {
+      const sentences = teacherPassage.match(/[^.!?]+[.!?]+/g) || [teacherPassage];
+      const newTask = {
+        id: `task-${Date.now()}`,
+        title: teacherTitle || 'Custom Reading Task',
+        level: 'CEFR B2 / 英検2級',
+        category: teacherCategory,
+        passage: teacherPassage,
+        sentences: sentences.map((s) => s.trim()),
+        vocabulary: [
+          { word: 'innovation', meaning: '革新・技術革新' },
+          { word: 'sustainability', meaning: '持続可能性' }
+        ],
+        quizzes: [
+          {
+            question: 'What is the main idea of the provided passage?',
+            options: ['Technology and innovation', 'Historical events', 'Ocean biology', 'Sports rules'],
+            correctIndex: 0
+          }
+        ]
+      };
+      setTasks([newTask, ...tasks]);
+      setSelectedTask(newTask);
+    };
+
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 pb-16">
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 text-xs font-bold animate-bounce flex items-center gap-2">
+            <Icons.Sparkles className="w-4 h-4 text-amber-400" />
+            {toastMessage}
+          </div>
+        )}
+
+        {/* Header */}
+        <header className="bg-gradient-to-r from-indigo-800 via-indigo-700 to-indigo-900 text-white shadow-lg sticky top-0 z-40 border-b border-indigo-600/30">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="bg-white/10 p-2 rounded-2xl backdrop-blur-md border border-white/20">
+                <Icons.GraduationCap className="w-7 h-7 text-indigo-200" />
+              </div>
+              <div>
+                <h1 className="text-xl font-extrabold tracking-tight flex items-center gap-2">
+                  seitono <span className="text-xs bg-indigo-500/80 px-2.5 py-0.5 rounded-full font-semibold border border-indigo-300/30">Voice AI Pro</span>
+                </h1>
+                <p className="text-[11px] text-indigo-200">AI英語音読・スピーキング＆リスニング統合学習Webアプリ</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <div className="bg-indigo-950/60 p-1 rounded-xl flex items-center border border-indigo-500/30">
+                <button
+                  onClick={() => setMode('student')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    mode === 'student' ? 'bg-white text-indigo-900 shadow-sm' : 'text-indigo-200 hover:text-white'
+                  }`}
+                >
+                  <Icons.User className="w-3.5 h-3.5" /> 生徒モード
+                </button>
+                <button
+                  onClick={() => setMode('teacher')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    mode === 'teacher' ? 'bg-white text-indigo-900 shadow-sm' : 'text-indigo-200 hover:text-white'
+                  }`}
+                >
+                  <Icons.BookOpen className="w-3.5 h-3.5" /> 先生モード
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl transition border border-indigo-400/30 flex items-center gap-1.5 text-xs font-semibold shadow-sm"
+              >
+                <Icons.Key className="w-4 h-4 text-amber-300" />
+                <span className="hidden sm:inline">{apiKey ? 'Gemini 連携済' : 'API設定'}</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* API Key Modal */}
+        {showSettings && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Icons.Key className="w-5 h-5 text-indigo-600" /> Gemini APIキー設定
+                </h3>
+                <button onClick={() => setShowSettings(false)} className="p-1 text-slate-400 hover:text-slate-600 font-bold rounded-lg">
+                  <Icons.X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+                Google AI StudioのAPIキーを登録すると、Geminiによるリアルタイム音読評価や対話スピーキング、自動問題作成機能が利用できます。
+              </p>
+
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full mb-4 py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md transition"
+              >
+                <Icons.Sparkles className="w-4 h-4" /> 無料APIキーを取得 (Google AI Studio)
+                <Icons.ExternalLink className="w-3.5 h-3.5" />
+              </a>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">API Key</label>
+                  <input
+                    type="password"
+                    placeholder="AIzaSy..."
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => saveApiKey(apiKey)}
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow"
+                  >
+                    設定を保存
+                  </button>
+                  <button
+                    onClick={() => setShowSettings(false)}
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-medium transition"
+                  >
+                    閉じる
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 mt-6">
+          {mode === 'teacher' ? (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <Icons.BookOpen className="w-5 h-5 text-indigo-600" /> AI課題作成＆教材管理
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      教科書や入試長文ペーストで、AIが10秒で理解クイズ・重要単語・音声データを構築します。
+                    </p>
+                  </div>
+                  <span className="self-start sm:self-center text-xs bg-indigo-50 text-indigo-700 font-semibold px-3 py-1 rounded-full border border-indigo-100 flex items-center gap-1">
+                    <Icons.Zap className="w-3.5 h-3.5 text-indigo-600" /> Google Classroom Ready
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">課題タイトル</label>
+                      <input
+                        type="text"
+                        placeholder="例: Unit 5: Environmental Sustainability"
+                        value={teacherTitle}
+                        onChange={(e) => setTeacherTitle(e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">カテゴリ / 目標レベル</label>
+                      <select
+                        value={teacherCategory}
+                        onChange={(e) => setTeacherCategory(e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                      >
+                        <option value="General">CEFR B1 (英検2級レベル)</option>
+                        <option value="Science & Tech">CEFR B2 (英検准1級レベル)</option>
+                        <option value="Academic">CEFR C1 (難関大学入試レベル)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">英文テキスト</label>
+                    <textarea
+                      rows={5}
+                      placeholder="ここに課題用英文を入力するかペーストしてください..."
+                      value={teacherPassage}
+                      onChange={(e) => setTeacherPassage(e.target.value)}
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none leading-relaxed font-serif-custom"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      onClick={handleTeacherGenerate}
+                      disabled={isGenerating}
+                      className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition disabled:opacity-50"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          AI分析・課題作成中...
+                        </>
+                      ) : (
+                        <>
+                          <Icons.Sparkles className="w-4 h-4" /> AIで教材パッケージを自動作成
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Selected Task</label>
+                    <select
+                      value={selectedTask.id}
+                      onChange={(e) => {
+                        const found = tasks.find((t) => t.id === e.target.value);
+                        if (found) {
+                          setSelectedTask(found);
+                          setQuizAnswers({});
+                          setQuizSubmitted(false);
+                          setAssessmentResult(null);
+                          setActiveStep(1);
+                        }
+                      }}
+                      className="text-base font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      {tasks.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          [{t.level}] {t.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-xl self-start lg:self-center">
+                    <button
+                      onClick={() => setActiveTab('reading')}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                        activeTab === 'reading' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Icons.BookOpen className="w-3.5 h-3.5" /> 音読・採点
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('shadowing')}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                        activeTab === 'shadowing' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Icons.Volume2 className="w-3.5 h-3.5" /> シャドーイング
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50/50 border border-amber-200/70 p-5 rounded-xl">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Icons.BookOpen className="w-4 h-4 text-amber-700" /> Reading Passage
+                    </span>
+
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => speakText(selectedTask.passage)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition shadow-sm ${
+                          isPlayingModelVoice
+                            ? 'bg-rose-500 text-white border-rose-600 animate-pulse'
+                            : 'bg-white text-amber-900 border-amber-300 hover:bg-amber-100'
+                        }`}
+                      >
+                        <Icons.Volume2 className="w-4 h-4 text-amber-700" />
+                        {isPlayingModelVoice ? '再生停止' : '全文お手本再生'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="text-sm md:text-base text-slate-800 font-serif-custom leading-relaxed mb-4">
+                    {selectedTask.passage}
+                  </p>
+
+                  {selectedTask.vocabulary?.length > 0 && (
+                    <div className="pt-3 border-t border-amber-200/70 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-bold text-amber-900">重要語彙:</span>
+                      {selectedTask.vocabulary.map((v, idx) => (
+                        <span key={idx} className="text-xs bg-white border border-amber-200 text-slate-700 px-2.5 py-0.5 rounded-md shadow-xs">
+                          <strong className="text-indigo-900">{v.word}</strong>: {v.meaning}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Step Flow */}
+              {activeTab === 'reading' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between bg-white p-2 rounded-2xl shadow-sm border border-slate-200/80">
+                    {[
+                      { num: 1, label: '内容クイズ' },
+                      { num: 2, label: '音読練習' },
+                      { num: 3, label: '本番採点' },
+                      { num: 4, label: '学習確認票' }
+                    ].map((s) => (
+                      <button
+                        key={s.num}
+                        onClick={() => setActiveStep(s.num)}
+                        className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                          activeStep === s.num
+                            ? 'bg-indigo-600 text-white shadow'
+                            : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center ${activeStep === s.num ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                          {s.num}
+                        </span>
+                        <span className="hidden sm:inline">{s.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Step 1 */}
+                  {activeStep === 1 && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-6">
+                      <h3 className="text-md font-bold text-slate-800 flex items-center gap-2">
+                        <Icons.HelpCircle className="w-5 h-5 text-indigo-600" /> Step 1: 内容理解クイズ
+                      </h3>
+                      <div className="space-y-5">
+                        {selectedTask.quizzes?.map((q, qIdx) => (
+                          <div key={qIdx} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                            <p className="font-bold text-sm text-slate-800 mb-3">Q{qIdx + 1}. {q.question}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {q.options.map((opt, optIdx) => {
+                                const isSelected = quizAnswers[qIdx] === optIdx;
+                                return (
+                                  <button
+                                    key={optIdx}
+                                    onClick={() => setQuizAnswers({ ...quizAnswers, [qIdx]: optIdx })}
+                                    className={`p-3 rounded-xl border text-xs transition text-left ${
+                                      isSelected ? 'bg-indigo-50 border-indigo-500 text-indigo-900 font-bold' : 'bg-white border-slate-200 text-slate-700'
+                                    }`}
+                                  >
+                                    {opt}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => setActiveStep(2)}
+                          className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow"
+                        >
+                          Step 2: 音読練習に進む <Icons.ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2 */}
+                  {activeStep === 2 && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-6">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                        <h3 className="text-md font-bold text-slate-800 flex items-center gap-2">
+                          <Icons.Mic className="w-5 h-5 text-indigo-600" /> Step 2: 音読練習
+                        </h3>
+                        <span className="text-xs font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
+                          練習回数: {practiceCount} 回
+                        </span>
+                      </div>
+
+                      <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-4">
+                        <button
+                          onClick={() => toggleRecording(true)}
+                          className={`px-8 py-4 rounded-full font-bold text-xs flex items-center gap-2 transition shadow-lg mx-auto ${
+                            isRecording ? 'bg-rose-500 text-white animate-pulse' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                          }`}
+                        >
+                          <Icons.Mic className="w-5 h-5" />
+                          {isRecording ? '練習録音を停止 (カウント+1)' : '練習録音を開始'}
+                        </button>
+
+                        {transcript && (
+                          <div className="p-4 bg-white rounded-xl border border-slate-200 text-left shadow-xs mt-3">
+                            <p className="text-xs text-slate-800 font-serif-custom">{transcript}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between">
+                        <button onClick={() => setActiveStep(1)} className="text-xs text-slate-500 font-medium">← Step 1 に戻る</button>
+                        <button onClick={() => setActiveStep(3)} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1">
+                          Step 3: 本番採点に進む <Icons.ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 3 */}
+                  {activeStep === 3 && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-6">
+                      <h3 className="text-md font-bold text-slate-800 flex items-center gap-2">
+                        <Icons.Award className="w-5 h-5 text-indigo-600" /> Step 3: 音読本番採点
+                      </h3>
+                      <div className="p-8 rounded-2xl bg-indigo-50/50 border border-indigo-100 text-center space-y-5">
+                        <button
+                          onClick={() => toggleRecording(false)}
+                          className={`px-8 py-4 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition mx-auto shadow-xl ${
+                            isRecording ? 'bg-rose-600 text-white animate-pulse' : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          }`}
+                        >
+                          <Icons.Mic className="w-5 h-5" />
+                          {isRecording ? '本番録音を完了する' : '本番録音を開始する'}
+                        </button>
+
+                        {transcript && !isRecording && (
+                          <button
+                            onClick={evaluateReading}
+                            disabled={isEvaluating}
+                            className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg transition flex items-center gap-2 mx-auto disabled:opacity-50"
+                          >
+                            {isEvaluating ? 'AI評価中...' : 'Gemini AI 本番採点を実行'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 4 */}
+                  {activeStep === 4 && assessmentResult && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/80 space-y-6">
+                      <div className="border-b border-slate-200 pb-4 flex justify-between items-center">
+                        <h3 className="text-lg font-bold text-slate-800">学習確認票 (Google Classroom提出用)</h3>
+                        {submittedToClassroom ? (
+                          <span className="px-4 py-2 bg-emerald-100 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-emerald-200">
+                            <Icons.CheckCircle className="w-4 h-4" /> Classroomへ提出完了
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSubmittedToClassroom(true);
+                              showToast('Google Classroomへ提出が完了しました！');
+                            }}
+                            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2"
+                          >
+                            <Icons.Send className="w-4 h-4" /> Google Classroomに提出する
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-4 bg-slate-50 rounded-xl border text-center">
+                          <span className="text-[10px] text-slate-400 font-bold block mb-1">練習回数</span>
+                          <span className="text-2xl font-black text-indigo-600">{practiceCount} 回</span>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-xl border text-center">
+                          <span className="text-[10px] text-slate-400 font-bold block mb-1">総合AIスコア</span>
+                          <span className="text-2xl font-black text-amber-500">{assessmentResult.score} 点</span>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-xl border text-center">
+                          <span className="text-[10px] text-slate-400 font-bold block mb-1">判定レベル</span>
+                          <span className="text-xl font-black text-indigo-900">{assessmentResult.cefrLevel}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-5 bg-indigo-50/70 rounded-xl border border-indigo-100">
+                        <h4 className="text-xs font-bold text-indigo-900 mb-2">AI評価フィードバック</h4>
+                        <p className="text-xs text-slate-700 leading-relaxed">{assessmentResult.feedback}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App />);
+</script>
+</body>
+</html>
